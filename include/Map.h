@@ -1,0 +1,90 @@
+/**
+* This file is part of ORB-SLAM2.
+*
+* Copyright (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es> (University of Zaragoza)
+* For more information see <https://github.com/raulmur/ORB_SLAM2>
+*
+* ORB-SLAM2 is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* ORB-SLAM2 is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef MAP_H
+#define MAP_H
+
+#include "MapPoint.h"
+#include "KeyFrame.h"
+#include <set>
+
+#include <mutex>
+
+
+
+namespace ORB_SLAM2
+{
+
+class MapPoint;
+class KeyFrame;
+
+class Map
+{
+public:
+    Map();
+
+    void AddKeyFrame(KeyFrame* pKF);
+    void AddMapPoint(MapPoint* pMP);
+    void EraseMapPoint(MapPoint* pMP);
+    void EraseKeyFrame(KeyFrame* pKF);
+    void SetReferenceMapPoints(const std::vector<MapPoint*> &vpMPs);
+    void InformNewBigChange();
+    int GetLastBigChangeIdx();
+
+    std::vector<KeyFrame*> GetAllKeyFrames();
+    std::vector<MapPoint*> GetAllMapPoints();
+    std::vector<MapPoint*> GetReferenceMapPoints();
+
+    long unsigned int MapPointsInMap();
+    long unsigned  KeyFramesInMap();
+
+    long unsigned int GetMaxKFid();
+
+    void clear();
+
+    vector<KeyFrame*> mvpKeyFrameOrigins;
+
+    std::mutex mMutexMapUpdate;
+
+    // This avoid that two points are created simultaneously in separate threads (id conflict)
+    std::mutex mMutexPointCreation;
+
+protected:
+    //地图部分主要是两个数据结构，第一个是，地图点，第二个是关键帧
+    //特征点是2D的，相机图像上的点
+    //地图点是3D的，根据同意特征点在多个图片中的不同位置三角化得到的
+    //地图点比对应某特征点
+    //特征点不一定能够三角化出地图点
+    std::set<MapPoint*> mspMapPoints;
+    std::set<KeyFrame*> mspKeyFrames;
+
+    std::vector<MapPoint*> mvpReferenceMapPoints;
+
+    long unsigned int mnMaxKFid;
+
+    // Index related to a big change in the map (loop closure, global BA)
+    int mnBigChangeIdx;
+
+    std::mutex mMutexMap;
+};
+
+} //namespace ORB_SLAM
+
+#endif // MAP_H
